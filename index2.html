@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>החיבור הישיר לבינה המלאכותית</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen font-sans p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-lg border border-slate-200">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">החיבור הישיר לבינה המלאכותית</h1>
+        
+        <div class="mb-5">
+            <label for="apiKey" class="block text-sm font-medium text-slate-700 mb-2">1. הדביקו כאן את מפתח ה-API של Groq:</label>
+            <input type="password" id="apiKey" placeholder="הדביקו מפתח כאן..." 
+                class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-left font-mono" dir="ltr" autocomplete="off">
+        </div>
+
+        <div class="mb-5">
+            <label for="userPrompt" class="block text-sm font-medium text-slate-700 mb-2">2. כתבו את הבקשה שלכם למודל:</label>
+            <textarea id="userPrompt" rows="3" placeholder="למשל: כתוב לי 3 שאלות חזרה על החומר..." 
+                class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+        </div>
+
+        <button id="actionBtn" onclick="askGroq()" 
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+            שלח בקשה למודל
+        </button>
+
+        <div class="mt-6">
+            <h3 class="text-sm font-medium text-slate-500 mb-2">התשובה שתתקבל:</h3>
+            <div id="result" class="min-h-[100px] p-4 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 whitespace-pre-wrap">מחכה למפתח ולשאלה...</div>
+        </div>
+    </div>
+
+    <script>
+        async function askGroq() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const userPrompt = document.getElementById('userPrompt').value.trim();
+            const resultDiv = document.getElementById('result');
+            const button = document.getElementById('actionBtn');
+
+            if (!apiKey) {
+                resultDiv.innerHTML = '<span class="text-red-600 font-bold">שגיאה: לא הוזן מפתח API.</span>';
+                return;
+            }
+            if (!userPrompt) {
+                resultDiv.innerHTML = '<span class="text-red-600 font-bold">שגיאה: לא נכתבה בקשה למודל.</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<span class="text-blue-600">מתחבר לשרתי Groq...</span>';
+            button.disabled = true;
+            button.classList.add('opacity-50');
+
+            const url = 'https://api.groq.com/openai/v1/chat/completions';
+            
+            const payload = {
+                model: 'llama3-8b-8192',
+                messages: [
+                    { role: 'user', content: userPrompt }
+                ]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}` 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'המפתח שגוי או שיש בעיית חיבור.');
+                }
+
+                const answer = data.choices[0].message.content;
+                resultDiv.textContent = answer;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="text-red-600 font-bold">החיבור נכשל. (פרטי השגיאה: ${error.message})</span>`;
+            } finally {
+                button.disabled = false;
+                button.classList.remove('opacity-50');
+            }
+        }
+    </script>
+</body>
+</html>
